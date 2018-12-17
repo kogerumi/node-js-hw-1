@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const REMOVE_ORIGINAL_PARAM = '-rmo';
+let removed = [];
 
 // Copying file with optional source removal
 const copyFileToCatalog = (filepath, dest, cb, removeOriginal) => {
@@ -16,12 +17,8 @@ const copyFileToCatalog = (filepath, dest, cb, removeOriginal) => {
 
   if (removeOriginal) {
     removeOriginal && fs.unlink(filepath, err => {
-
-      if (err) {
-        console.log(JSON.stringify(err));
-      }
+      if (err) return console.log(JSON.stringify(err));
       cb && cb();
-
     });
 
     return;
@@ -35,35 +32,28 @@ const cleanEmpty = (pathName) => {
 
   const clean = (p) => {
 
+    if (removed.includes(p)) return;
+
     fs.readdir(p, { withFileTypes: true }, (err, items) => {
 
-      if (err) {
-        console.log(err.message);
-        return;
-      }
+      if (err) return console.log(err.message);
 
-      if (!items.length) {
+      if (!items.length && !removed.includes(p)) {
+
+        removed.push(p);
 
         fs.rmdir(p, err => {
-
-          if (err) {
-            console.log(JSON.stringify(err));
-          }
-
+          if (err) return console.log(JSON.stringify(err));
           clean(pathName);
-
         });
 
         return;
-
       }
 
       items.forEach((item) => {
-
         if (item.isDirectory()) {
           clean(path.resolve(p, item.name));
         }
-
       });
 
     });
@@ -79,10 +69,7 @@ const walkFiles = (dir, fileCallback) => {
 
   fs.readdir(dir, { withFileTypes: true }, (err, items) => {
 
-    if (err) {
-      console.log(err.message);
-      return;
-    }
+    if (err) return console.log(err.message);
 
     if (!items.length) {
       console.log('Directory is empty');
